@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postgres Monitor</title>
+    <script type="text/javascript" src="{{ url_for('static', path='smoothie.js') }}"></script>
+    <style>
+      table thead{
+        font-weight: bold;
+      }
+
+      table td {
+        padding: 10px 30px;
+      }
+    </style>
+</head>
+<body onload="createTimeline()">
+
+<h2>Connection Graph</h2>
+
+<canvas id="chart" width="500" height="150"></canvas>
+
+<h2> TPS Statistic </h2>
+
+<table border="2px" >
+  <thead>
+    <tr>
+      <td>Transactions</td>
+      <td>Commits</td>
+      <td>Rollbacks</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span id="transaction">0</span></td>
+      <td><span id="commit">0</span></td>
+      <td><span id="rollback">0</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<script type="text/javascript">
+
+  // Randomly add a data point every 500ms
+  var total = new TimeSeries();
+  var active = new TimeSeries();
+  var idle = new TimeSeries();
+
+  var transaction_span = document.getElementById(id="transaction");
+  var commit_span = document.getElementById(id="commit");
+  var rollback_span = document.getElementById(id="rollback");
+
+  var event = new EventSource('/stats')
+  event.onmessage = function(event){         
+    try{
+      let data = JSON.parse(event.data);
+      let session_stats = JSON.parse(data.session_stats);
+      let tps_stats = JSON.parse(data.tps_stats);
+      let datetime_now = new Date().getTime();
+
+      total.append(datetime_now, session_stats.Total);
+      active.append(datetime_now, session_stats.Active);
+      idle.append(datetime_now, session_stats.Idle);
+
+      transaction_span.innerText = tps_stats.Transactions;
+      commit_span.innerText = tps_stats.Commits;
+      rollback_span.innerText = tps_stats.Rollbacks;
+    }catch(err){
+      console.log(err);
+    }
+  }
+  
+  function createTimeline() {
+    var chart = new SmoothieChart({interpolation:'linear',  tooltip:true, timestampFormatter:SmoothieChart.timeFormatter});
+    chart.addTimeSeries(total, { strokeStyle: 'rgba(0, 0, 255, 1)', fillStyle: 'rgba(0, 0, 255, 0.2)', lineWidth: 4 });
+    chart.addTimeSeries(active, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
+    chart.addTimeSeries(idle, { strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.2)', lineWidth: 4 });
+    chart.streamTo(document.getElementById("chart"), 500);
+  }
+</script>
+</body>
+</html>
