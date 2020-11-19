@@ -9,6 +9,7 @@ import json
 import asyncpg
 import asyncio
 import re
+from postgres_monitor.core.query import (datname_query, stat_query, db_list_query, all_stat_query)
 
 config = Config('postgres_monitor/.env')
 DATABASE_URL = config('DATABASE_URL')
@@ -18,38 +19,40 @@ SLEEP_TIME = 2
 
 templates = Jinja2Templates(directory='postgres_monitor/templates')
 
-datname_query = 'SELECT datname FROM pg_database WHERE oid = {oid}'
-
-stat_query = '''SELECT 'session_stats' AS chart_name, row_to_json(t) AS chart_data  
-  FROM (SELECT 
-    (SELECT count(*) FROM pg_stat_activity WHERE datname = '{datname}') AS "Total",
-    (SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND datname = '{datname}')  AS "Active", 
-    (SELECT count(*) FROM pg_stat_activity WHERE state = 'idle' AND datname = '{datname}')  AS "Idle"
-  ) t
-  UNION ALL
-  SELECT 'tps_stats' AS chart_name, row_to_json(t) AS chart_data 
-  FROM (SELECT 
-    (SELECT sum(xact_commit) + sum(xact_rollback) FROM pg_stat_database WHERE datname = '{datname}') AS "Transactions",
-    (SELECT sum(xact_commit) FROM pg_stat_database WHERE datname = '{datname}') AS "Commits",
-    (SELECT sum(xact_rollback) FROM pg_stat_database WHERE datname = '{datname}') AS "Rollbacks"
- ) t;
- '''
-
 def sanitize_input(data):
     return re.sub(r"[^a-zA-Z0-9 ]", "", data)
 
-async def get_db_gen(database_name=DATABASE):
+async def get_db_gen(database_name='ALL'):
     json_data = {}
     while True:
-        data = await conn.fetch(stat_query.format(datname=database_name))
+        if database_name in ('ALL',''):
+            data = await conn.fetch(all_stat_query)
+        else:
+            data = await conn.fetch(stat_query.format(datname=database_name))
         for row in data:
             json_data.update({row.get('chart_name'):row.get('chart_data')})
         yield json.dumps(json_data)
         await asyncio.sleep(SLEEP_TIME)
 
+async def get_specific_db(request):
+    db_name = sanitize_input(request.path_params['database'])
+    if db_name in ('ALL', ''):
+        return EventSourceResponse(get_db_gen())
+    else:
+        return EventSourceResponse(get_db_gen(database_name=db_name))
+
 async def get_db_name(request):
     row = await conn.fetchrow(datname_query.format(oid=16384))
     return JSONResponse(dict(row.items()))
+
+async def get_db_list(request):
+    rows = await conn.fetch(db_list_query)
+    dbs = ['ALL']
+    for row in rows:
+        db = row.get('datname')
+        if db:
+            dbs.append(db)
+    return JSONResponse(dbs)
 
 async def get_db_stats(request):
     return EventSourceResponse(get_db_gen())
@@ -59,8 +62,10 @@ async def homepage(request):
 
 ROUTES = [
     Route('/', homepage),
+    Route('/db/{database:str}', get_specific_db),
     Route('/stats', get_db_stats),
     Route('/name', get_db_name),
+    Route('/dblist', get_db_list),
     Mount('/static', StaticFiles(directory="postgres_monitor/templates/static"), name="static"),
 ]
 
