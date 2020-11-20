@@ -1,7 +1,7 @@
 # PostgreSQL Activity Monitor
 =============================
 
-Nonitors for:
+Monitors for:
 
 - Database connections: Total, Active, Idle
 - Number of transaction, commits and rollbacks performed

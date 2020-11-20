@@ -114,7 +114,7 @@
       event.onmessage = eventCallback;
       
       function createTimeline() {
-        var chart = new SmoothieChart({interpolation:'linear',  tooltip:true, timestampFormatter:SmoothieChart.timeFormatter});
+        var chart = new SmoothieChart({interpolation:'linear', minValue:0, tooltip:true, timestampFormatter:SmoothieChart.timeFormatter});
         chart.addTimeSeries(total, { strokeStyle: 'rgba(0, 0, 255, 1)', fillStyle: 'rgba(0, 0, 255, 0.2)', lineWidth: 4 });
         chart.addTimeSeries(active, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
         chart.addTimeSeries(idle, { strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.2)', lineWidth: 4 });

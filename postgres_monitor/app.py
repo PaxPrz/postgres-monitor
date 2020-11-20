@@ -20,7 +20,7 @@ SLEEP_TIME = 2
 templates = Jinja2Templates(directory='postgres_monitor/templates')
 
 def sanitize_input(data):
-    return re.sub(r"[^a-zA-Z0-9 ]", "", data)
+    return re.sub(r"[^a-zA-Z0-9-_ ]", "", data)
 
 async def get_db_gen(database_name='ALL'):
     json_data = {}
