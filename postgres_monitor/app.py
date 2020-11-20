@@ -13,7 +13,7 @@ from postgres_monitor.core.query import (datname_query, stat_query, db_list_quer
 
 config = Config('postgres_monitor/.env')
 DATABASE_URL = config('DATABASE_URL')
-DATABASE = config('DATABASE')
+
 conn = None
 SLEEP_TIME = 2
 

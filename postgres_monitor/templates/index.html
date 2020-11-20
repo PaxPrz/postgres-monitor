@@ -18,7 +18,40 @@
 
     <h2>Connection Graph</h2>
 
-    <canvas id="chart" width="500" height="150"></canvas>
+    <div>
+      <div style="float:left;">
+        <canvas id="chart" width="500" height="150"></canvas>
+      </div>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <td style="font-weight: bold;">Index</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div style="width: 20px; height:20px; background-color:blue; float: left;"></div>
+                <span style="margin:0px 10px">Total [ <span id="total_span">0</span> ]</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="width: 20px; height:20px; background-color:green; float:left;"></div>
+                <span style="margin:0px 10px">Active [ <span id="active_span">0</span> ]</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="width: 20px; height:20px; background-color:red; float:left;"></div>
+                <span style="margin:0px 10px">Idle [ <span id="idle_span">0</span> ]</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <h2> TPS Statistic </h2>
 
@@ -52,6 +85,10 @@
           active.append(datetime_now, session_stats.Active);
           idle.append(datetime_now, session_stats.Idle);
 
+          total_span.innerText = session_stats.Total;
+          active_span.innerText = session_stats.Active;
+          idle_span.innerText = session_stats.Idle;
+
           transaction_span.innerText = tps_stats.Transactions;
           commit_span.innerText = tps_stats.Commits;
           rollback_span.innerText = tps_stats.Rollbacks;
@@ -69,8 +106,12 @@
       var commit_span = document.getElementById(id="commit");
       var rollback_span = document.getElementById(id="rollback");
 
-      event = new EventSource('/stats')
-      event.onmessage = eventCallback
+      var total_span = document.getElementById(id="total_span");
+      var active_span = document.getElementById(id="active_span");
+      var idle_span = document.getElementById(id="idle_span");
+
+      event = new EventSource('/stats');
+      event.onmessage = eventCallback;
       
       function createTimeline() {
         var chart = new SmoothieChart({interpolation:'linear',  tooltip:true, timestampFormatter:SmoothieChart.timeFormatter});
