@@ -24,3 +24,8 @@ Nonitors for:
 4. Run the program
 
 `$ uvicorn postgres_monitor.app:app`
+
+
+### Screenshot
+
+![Screenshot](/static/monitor.png)
